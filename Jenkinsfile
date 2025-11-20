@@ -100,30 +100,26 @@ pipeline {
             }
     }
 
-        stage("Run Acceptance Tests") {
-    steps {
-        script {
-            sh 'docker stop qa-tests || true'
-            sh 'docker rm qa-tests || true'
-
-            // Force rebuild the test image so the new CMD is active
-            sh 'docker build --no-cache -t qa-tests -f Dockerfile.test .'
-
-            // Run tests and mount reports back into Jenkins workspace
-            sh 'mkdir -p reports'
-            sh 'docker run --rm -v $WORKSPACE/reports:/usr/src/app/reports qa-tests'
+      stage("Run Acceptance Tests") {
+            steps {
+                script {
+                    sh 'docker stop qa-tests || true'
+                    sh 'docker rm qa-tests || true'
+                    sh 'docker build -t qa-tests -f Dockerfile.test .'
+                    sh 'docker run qa-tests'
+                }
+            }
         }
-
-        // Verify reports exist in workspace
-        sh 'ls -R reports'
-
-        // Archive JUnit XML results
-        junit 'reports/pytest-results.xml'
-
-        // Publish coverage report
-        publishCoverage adapters: [coberturaAdapter('reports/coverage.xml')]
-    }
-}
+        
+        stage('Remove Test Data') {
+            steps {
+                script {
+                    // Run the python script to generate data to add to the database
+                    def appPod = sh(script: "kubectl get pods -l app=flask -o jsonpath='{.items[0].metadata.name}'", returnStdout: true).trim()
+                    sh "kubectl exec ${appPod} -- python3 data-clear.py"
+                }
+            }
+        }
         
         stage('Remove Test Data') {
             steps {
