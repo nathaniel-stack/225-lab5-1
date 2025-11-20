@@ -101,15 +101,29 @@ pipeline {
     }
 
         stage("Run Acceptance Tests") {
-            steps {
-                script {
-                    sh 'docker stop qa-tests || true'
-                    sh 'docker rm qa-tests || true'
-                    sh 'docker build -t qa-tests -f Dockerfile.test .'
-                    sh 'docker run qa-tests'
-                }
-            }
+    steps {
+        script {
+            sh 'docker stop qa-tests || true'
+            sh 'docker rm qa-tests || true'
+
+            // Build the test image
+            sh 'docker build -t qa-tests -f Dockerfile.test .'
+
+            // Run tests and mount reports back into Jenkins workspace
+            sh 'mkdir -p reports'
+            sh 'docker run --rm -v $WORKSPACE/reports:/usr/src/app/reports qa-tests'
         }
+
+        // Verify reports exist in workspace
+        sh 'ls -R reports'
+
+        // Archive JUnit XML results
+        junit 'reports/pytest-results.xml'
+
+        // Publish coverage report
+        publishCoverage adapters: [coberturaAdapter('reports/coverage.xml')]
+    }
+}
         
         stage('Remove Test Data') {
             steps {
