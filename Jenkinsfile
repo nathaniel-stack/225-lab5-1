@@ -106,8 +106,8 @@ pipeline {
             sh 'docker stop qa-tests || true'
             sh 'docker rm qa-tests || true'
 
-            // Build the test image
-            sh 'docker build -t qa-tests -f Dockerfile.test .'
+            // Force rebuild the test image so the new CMD is active
+            sh 'docker build --no-cache -t qa-tests -f Dockerfile.test .'
 
             // Run tests and mount reports back into Jenkins workspace
             sh 'mkdir -p reports'
