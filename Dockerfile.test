@@ -29,4 +29,7 @@ RUN GECKODRIVER_VERSION=$(curl -s https://api.github.com/repos/mozilla/geckodriv
 ENV DISPLAY=:99
 
 # Command to run on container start
-CMD ["python", "./test_html_elements.py"]
+CMD ["pytest", "test_html_elements.py",
+     "--junitxml=/usr/src/app/reports/pytest-results.xml",
+     "--cov=.",
+     "--cov-report=xml:/usr/src/app/reports/coverage.xml"]
